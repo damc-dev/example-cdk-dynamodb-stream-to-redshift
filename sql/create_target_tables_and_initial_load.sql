@@ -1,5 +1,3 @@
--- NOTE: Do these tables still need sequenceNumber now that I have switched to using approximateArrivalTimestamp to get only new records?
-
 -- MEMBER: Create table
 DROP TABLE member;
 

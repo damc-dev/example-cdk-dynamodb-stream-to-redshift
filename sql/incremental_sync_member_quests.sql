@@ -2,19 +2,19 @@ CREATE OR REPLACE PROCEDURE incremental_sync_member_quests ()
 AS $$
 DECLARE
     sql          VARCHAR(MAX) := '';
-        max_approximate_arrival_timestamp TIMESTAMP;
+        max_approximate_update_timestamp TIMESTAMP;
         staged_record_count BIGINT :=0;
 BEGIN
 
 	-- Get last loaded sequence number from target table
 
-    sql := 'SELECT MAX(approximateArrivalTimestamp) FROM member_quest;';
-    EXECUTE sql INTO max_approximate_arrival_timestamp;
+    sql := 'SELECT MAX(approximateUpdateTimestamp) FROM member_quest;';
+    EXECUTE sql INTO max_approximate_update_timestamp;
     
-    IF max_approximate_arrival_timestamp = '1970-01-01' OR max_approximate_arrival_timestamp IS NULL THEN
-        RAISE EXCEPTION 'Aborted - `max_approximate_arrival_timestamp` was not retrieved correctly.  Ensure you have done initial data load before attempting incremental sync';
+    IF max_approximate_update_timestamp = '1970-01-01' OR max_approximate_update_timestamp IS NULL THEN
+        RAISE EXCEPTION 'Aborted - `max_approximate_update_timestamp` was not retrieved correctly.  Ensure you have done initial data load before attempting incremental sync';
 	END IF;
-   	RAISE INFO 'Last approximate_arrival_timestamp inserted into member_quest: %', max_approximate_arrival_timestamp;
+   	RAISE INFO 'Last approximate_update_timestamp inserted into member_quest: %', max_approximate_update_timestamp;
     
     -- Create temp staging table from target table
 
@@ -26,12 +26,12 @@ BEGIN
 
     EXECUTE 'INSERT INTO member_quest_stage ('||
       ' SELECT LTRIM(sk, ''MQ_'' ) as memberQuestId, LTRIM(pk, ''MQ#M_'' ) as memberId,'||
-          ' eventData."NewImage"."questId"."S"::varchar as questId,'||
-          ' eventData."NewImage"."dollarsEarned"."N"::float as dollarsEarned,'||
-          ' approximateArrivalTimestamp,'||
-          ' sequencenumber as eventSequenceNumber'||
+      '		eventData."NewImage"."questId"."S"::varchar as questId,'||
+      '		eventData."NewImage"."dollarsEarned"."N"::float as dollarsEarned,'||
+      '		TIMESTAMP ''epoch'' + eventData."ApproximateCreationDateTime"::BIGINT/1000 *INTERVAL ''1 second'' as approximateUpdateTimestamp,'||
+      '		eventName'||
       ' FROM member_quest_data_extract'||
-      ' WHERE pk LIKE ''MQ#%'' AND approximateArrivalTimestamp > '''||max_approximate_arrival_timestamp||''');';
+      ' WHERE pk LIKE ''MQ#%'' AND approximateUpdateTimestamp > '''||max_approximate_update_timestamp||''');';
 
     sql := 'SELECT COUNT(*) FROM member_quest_stage;';
     
@@ -40,7 +40,7 @@ BEGIN
     
     -- In staging table remove all but latest change for record
     
-    EXECUTE 'DELETE FROM member_quest_stage where (memberQuestId, approximateArrivalTimestamp) NOT IN (SELECT memberQuestId, MAX(approximateArrivalTimestamp) as approximateArrivalTimestamp FROM member_quest_stage GROUP BY memberQuestId)';
+    EXECUTE 'DELETE FROM member_quest_stage where (memberQuestId, approximateUpdateTimestamp) NOT IN (SELECT memberQuestId, MAX(approximateUpdateTimestamp) as approximateUpdateTimestamp FROM member_quest_stage GROUP BY memberQuestId)';
 
 	-- Delete records from target table that also exist in staging table (updated/deleted records)
     
@@ -61,8 +61,9 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
-SELECT count(*), MIN(approximateArrivalTimestamp), MAX(approximateArrivalTimestamp) FROM member_quest;
+SELECT count(*), MIN(approximateUpdateTimestamp), MAX(approximateUpdateTimestamp) FROM member_quest;
 REFRESH MATERIALIZED VIEW member_quest_data_extract;
 call incremental_sync_member_quests();
 SELECT message FROM SVL_STORED_PROC_MESSAGES WHERE querytxt = 'call incremental_sync_member_quests();' ORDER BY recordTime DESC;
-SELECT count(*), MIN(approximateArrivalTimestamp), MAX(approximateArrivalTimestamp) FROM member_quest;
+SELECT count(*), MIN(approximateUpdateTimestamp), MAX(approximateUpdateTimestamp) FROM member_quest;
+SELECT * FROM member_quest ORDER BY approximateUpdateTimestamp DESC LIMIT 5;
