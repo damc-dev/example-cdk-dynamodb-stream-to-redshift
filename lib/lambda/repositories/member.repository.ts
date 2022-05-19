@@ -1,4 +1,5 @@
 import * as SDK from "aws-sdk";
+import { Member } from "../models";
 
 const TABLE_NAME = process.env.TABLE_NAME;
 if (!TABLE_NAME) {
