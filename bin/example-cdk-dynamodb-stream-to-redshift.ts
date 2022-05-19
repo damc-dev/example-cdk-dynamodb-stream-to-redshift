@@ -2,7 +2,6 @@
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
 import { ExampleCdkDynamodbStreamToRedshiftStack } from '../lib/example-cdk-dynamodb-stream-to-redshift-stack';
-import { NetworkStack } from '../lib/NetworkStack';
 
 const app = new cdk.App();
 

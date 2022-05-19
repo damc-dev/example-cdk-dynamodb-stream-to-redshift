@@ -1,40 +1,28 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { User } from "aws-cdk-lib/aws-iam";
 import * as SDK from "aws-sdk";
 import { v4 as uuidv4 } from "uuid";
+import { Member, MemberQuest, Quest } from "./models";
+import { MemberRepository } from "./repositories/member.repository";
 
 const TABLE_NAME = process.env.TABLE_NAME;
 if (!TABLE_NAME) {
   throw new Error("Missing TABLE_NAME environment variable");
 }
 
-interface Member {
-  id: string;
-  name: string;
-}
-
-interface Quest {
-  id: string;
-  name: string;
-}
-
-interface MemberQuest {
-  id: string;
-  dollarsEarned: number;
-  memberId: string;
-  questId: string;
-}
+const dynamo = new SDK.DynamoDB();
+const memberRepository = new MemberRepository(dynamo);
 
 exports.handler = async (event: any) => {
   console.log("Received event: ", event);
 
-  const dynamo = new SDK.DynamoDB();
   const member = generateMember();
   console.log("Generated member:", member);
-  const memberReq = mapMemberRequest(member);
-  console.log("Member request", memberReq)
-  await dynamo.putItem(memberReq).promise();
-  console.log("Put member:", memberReq);
+
+  //const memberReq = mapMemberRequest(member);
+  //console.log("Member request", memberReq)
+  //await dynamo.putItem(memberReq).promise();
+  await memberRepository.create(member);
+  console.log("Put member:", member);
 
   const quest = generateQuest();
   console.log("Generated quest:", quest);
@@ -63,23 +51,6 @@ function generateMember(): Member {
   return {
     id: uuidv4(),
     name: getRandomItem(names),
-  };
-}
-
-function mapMemberRequest(member: Member): SDK.DynamoDB.PutItemInput {
-  return {
-    TableName: TABLE_NAME,
-    Item: {
-      pk: {
-        S: `M_${member.id}`,
-      },
-      sk: {
-        S: member.name,
-      },
-      memberId: {
-        S: member.id
-      }
-    },
   };
 }
 
@@ -145,7 +116,7 @@ function mapMemberQuestRequest(memberQuest: MemberQuest) {
         S: `MQ_${memberQuest.id}`,
       },
       questId: {
-        S: memberQuest.id,
+        S: memberQuest.questId,
       },
       dollarsEarned: {
         N: memberQuest.dollarsEarned.toString(),

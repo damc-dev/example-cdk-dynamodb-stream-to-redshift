@@ -71,3 +71,73 @@ SELECT
 FROM
     "new_db"."public"."activity_tracking_view";
 ```
+
+## Create Target Tables
+
+```sql
+CREATE TABLE member (
+    memberId VARCHAR,
+    memberName VARCHAR,
+    eventSequenceNumber VARCHAR
+);
+
+CREATE TABLE quest (
+    questId VARCHAR,
+    questName VARCHAR,
+    eventSequenceNumber VARCHAR
+);
+
+CREATE TABLE member_quest (
+    memberId VARCHAR,
+    questId VARCHAR,
+    dollarsEarned FLOAT,
+    --lastUpdatedTimestamp TIMESTAMP,
+    eventSequenceNumber VARCHAR
+);
+```
+
+
+### Initial Data Load
+
+```sql
+INSERT INTO member (
+SELECT
+    LTRIM(pk, 'M_' ) as memberId, sk as memberName, sequencenumber as eventSequenceNumber
+FROM
+    member_quest_data_extract
+WHERE SUBSTRING(pk, 1, 2) = 'M_'
+);
+
+
+INSERT INTO quest (
+SELECT
+    LTRIM(pk, 'Q_' )  as questId, sk as questName, sequencenumber as eventSequenceNumber
+FROM
+    member_quest_data_extract
+WHERE SUBSTRING(pk, 1, 2) = 'Q_'
+);
+
+INSERT INTO member_quest (
+SELECT
+    LTRIM(sk, 'MQ_' ) as memberQuestId,
+    LTRIM(pk, 'MQ#M_' ) as memberId,
+  	newImage."questId"."S"::varchar as questId,
+    newImage."dollarsEarned"."N"::float as dollarsEarned,
+  	sequencenumber as eventSequenceNumber
+FROM
+    member_quest_data_extract
+WHERE SUBSTRING(pk, 1, 3) = 'MQ#'
+);
+```
+
+## Queries
+
+```sql
+
+SELECT q.questName, SUM(dollarsEarned) FROM member_quest, quest as q WHERE q.questId = questId
+
+```
+
+
+
+
