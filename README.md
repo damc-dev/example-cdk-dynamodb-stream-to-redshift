@@ -13,6 +13,23 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
 * `cdk diff`        compare deployed stack with current state
 * `cdk synth`       emits the synthesized CloudFormation template
 
+# Goals
+
+* Show how you can get almost realtime data for analysis and reporting into Redshift
+* Show how you can keep data in sync between DynamoDB and Redshift
+
+# TODO
+
+* Show realtime data 
+    * Create records in DynamoDB, run incremental load into Redshift, query it in Redshift
+        * Create member, create multiple quests, create multiple member quests
+
+* Show data sync
+    * Update in DynamoDB, run incremental load into Redshift, query it in Redshift
+        * Update member quests with dollars earned
+
+* Show reporting
+    * Query for dollars earned by quest for a member
 
 # Steps
 
