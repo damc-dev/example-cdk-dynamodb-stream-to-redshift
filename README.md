@@ -20,7 +20,7 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
 
 # TODO
 
-* Show realtime data 
+* Show realtime data
     * Create records in DynamoDB, run incremental load into Redshift, query it in Redshift
         * Create member, create multiple quests, create multiple member quests
 

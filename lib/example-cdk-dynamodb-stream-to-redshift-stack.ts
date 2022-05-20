@@ -51,6 +51,10 @@ export class ExampleCdkDynamodbStreamToRedshiftStack extends Stack {
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
+    new CfnOutput(this, 'DynamoTableName', {
+      value: table.tableName
+    });
+
     const dataGenerator = new NodejsFunction(this, 'DataGeneratorFunction', {
       entry: join(__dirname, "lambda", "index.ts"),
       bundling: {
