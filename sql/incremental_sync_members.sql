@@ -28,7 +28,7 @@ BEGIN
         '	TIMESTAMP ''epoch'' + eventData."ApproximateCreationDateTime"::BIGINT/1000 *INTERVAL ''1 second'' as approximateUpdateTimestamp,'||
         '	eventName'||
     	' FROM member_quest_data_extract'||
-        ' WHERE pk LIKE ''M\\_%'' AND approximateUpdateTimestamp > '''||max_approximate_update_timestamp||''');';
+        ' WHERE pk LIKE ''M^_%'' escape ''^''  AND approximateUpdateTimestamp > '''||max_approximate_update_timestamp||''');';
  
     sql := 'SELECT COUNT(*) FROM member_stage;';
     
@@ -49,7 +49,7 @@ BEGIN
 
 	-- Insert all records from staging table into target table
 
-	EXECUTE 'INSERT INTO member SELECT * FROM member_stage;';
+	EXECUTE 'INSERT INTO member SELECT memberId,memberName, approximateUpdateTimestamp, eventName, GETDATE() as syncTimestamp FROM member_stage;';
 
 	-- Drop staging table
     

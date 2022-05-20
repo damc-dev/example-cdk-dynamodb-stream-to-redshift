@@ -52,7 +52,7 @@ BEGIN
 
 	-- Insert all records from staging table into target table
 
-	EXECUTE 'INSERT INTO member_quest SELECT * FROM member_quest_stage;';
+	EXECUTE 'INSERT INTO member_quest SELECT memberQuestId, memberId, questId, dollarsEarned, approximateUpdateTimestamp, eventName, GETDATE() as syncTimestamp FROM member_quest_stage;';
 
 	-- Drop staging table
     

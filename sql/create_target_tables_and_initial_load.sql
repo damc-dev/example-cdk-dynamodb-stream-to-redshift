@@ -5,7 +5,8 @@ CREATE TABLE member (
     memberId VARCHAR,
     memberName VARCHAR,
   	approximateUpdateTimestamp TIMESTAMP,
-  	eventName VARCHAR
+  	eventName VARCHAR,
+  	syncTimestamp TIMESTAMP
 );
 
 -- MEMBER: Initial load for testing
@@ -33,7 +34,8 @@ CREATE TABLE quest (
     questId VARCHAR,
     questName VARCHAR,
   	approximateUpdateTimestamp TIMESTAMP,
-   	eventName VARCHAR
+   	eventName VARCHAR,
+    syncTimestamp TIMESTAMP
 );
 
 
@@ -64,7 +66,8 @@ CREATE TABLE member_quest (
     questId VARCHAR,
     dollarsEarned FLOAT,
   	approximateUpdateTimestamp TIMESTAMP,
-    eventName VARCHAR
+    eventName VARCHAR,
+  	syncTimestamp TIMESTAMP
 );
 
 -- MEMBER QUEST: Initial load for testing
