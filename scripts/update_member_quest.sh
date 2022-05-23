@@ -62,7 +62,7 @@ fi
 
 item_key='{ "pk": { "S": "MQ#M_'${member_id}'" }, "sk": { "S": "MQ_'${id}'"} }'
 
-=aws dynamodb update-item \
+aws dynamodb update-item \
     --table-name "${dynamodb_table}" \
     --key "${item_key}" \
     --expression-attribute-values '{":e": {"N": "'${earned_dollars}'"}}' \
