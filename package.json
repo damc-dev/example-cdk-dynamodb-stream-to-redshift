@@ -9,7 +9,7 @@
     "watch": "tsc -w",
     "test": "jest",
     "cdk": "cdk",
-    "deploy": "cdk deploy --require-approval never --outputs-file outputs.json",
+    "deploy": "cdk deploy --outputs-file outputs.json",
     "deploy:watch": "cdk deploy --require-approval never --outputs-file outputs.json --watch"
   },
   "devDependencies": {
