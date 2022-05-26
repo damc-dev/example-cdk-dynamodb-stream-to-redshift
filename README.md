@@ -2,6 +2,10 @@
 
 This demo shows how you can use Redshift Streaming Ingestion (Preview) to sync DynamoDB data with Redshift in near realtime for ETL, Analytics, and Reporting all using SQL
 
+## Architecture Diagram
+
+![img](./images/ArchitectureDiagram.png)
+
 ## Data Flow Diagram
 
 ![img](./images/dataflow.png)
