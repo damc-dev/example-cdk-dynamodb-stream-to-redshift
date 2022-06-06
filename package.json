@@ -9,7 +9,7 @@
     "watch": "tsc -w",
     "test": "jest",
     "cdk": "cdk",
-    "deploy": "cdk deploy --outputs-file outputs.json",
+    "deploy": "cdk deploy --outputs-file outputs.json --all",
     "deploy:watch": "cdk deploy --require-approval never --outputs-file outputs.json --watch"
   },
   "devDependencies": {
@@ -23,6 +23,7 @@
     "typescript": "~3.9.7"
   },
   "dependencies": {
+    "@aws-cdk/aws-redshift-alpha": "^2.24.0-alpha.0",
     "aws-cdk-lib": "2.24.0",
     "constructs": "^10.0.0",
     "source-map-support": "^0.5.21"

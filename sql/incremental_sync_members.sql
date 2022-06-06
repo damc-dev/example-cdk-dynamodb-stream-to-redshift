@@ -58,9 +58,9 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
-SELECT count(*), MIN(approximateUpdateTimestamp), MAX(approximateUpdateTimestamp) FROM member;
-REFRESH MATERIALIZED VIEW member_quest_data_extract;
-call incremental_sync_members();
-SELECT message FROM SVL_STORED_PROC_MESSAGES WHERE querytxt = 'call incremental_sync_members();' ORDER BY recordTime DESC;
-SELECT count(*), MIN(approximateUpdateTimestamp), MAX(approximateUpdateTimestamp) FROM member;
-SELECT * FROM member ORDER BY approximateUpdateTimestamp DESC LIMIT 5;
+-- SELECT count(*), MIN(approximateUpdateTimestamp), MAX(approximateUpdateTimestamp) FROM member;
+-- REFRESH MATERIALIZED VIEW member_quest_data_extract;
+-- call incremental_sync_members();
+-- SELECT message FROM SVL_STORED_PROC_MESSAGES WHERE querytxt = 'call incremental_sync_members();' ORDER BY recordTime DESC;
+-- SELECT count(*), MIN(approximateUpdateTimestamp), MAX(approximateUpdateTimestamp) FROM member;
+-- SELECT * FROM member ORDER BY approximateUpdateTimestamp DESC LIMIT 5;

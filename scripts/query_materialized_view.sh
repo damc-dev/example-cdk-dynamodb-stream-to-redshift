@@ -36,18 +36,7 @@ database_username="${database_username:-${REDSHIFT_USERNAME}}"
 assume_role="${assume_role:-${REDSHIFT_ASSUME_ROLE_ARN}}"
 kinesis_stream_name="${kinesis_stream_name:-${KINESIS_STREAM_NAME}}"
 
-
-member_id="$(uuidgen)"
-member_name="Bob"
-
-put_item='{ "pk": { "S": "M_'${member_id}'" }, "sk": { "S": "'${member_name}'" }, "memberId": {"S": "'${member_id}'"}}'
-aws dynamodb put-item \
-    --table-name "${dynamodb_table}" \
-    --item "${put_item}"
-
-log "Created member memberId: ${member_id}"
-
-log "refresh_mv"
+log "refresh_mv_execution_id"
 refresh_mv_execution_id="$(aws redshift-data execute-statement \
     --region us-east-1 \
     --db-user "${database_username}" \
@@ -58,48 +47,15 @@ refresh_mv_execution_id="$(aws redshift-data execute-statement \
 
 wait_for_execution_status_change "${refresh_mv_execution_id}"
 
-log "query_member_from_mv"
 
-query_member_from_mv_execution_id="$(aws redshift-data execute-statement \
+log "query_materialized_view"
+query_materialized_view="$(aws redshift-data execute-statement \
     --region us-east-1 \
     --db-user "${database_username}" \
     --cluster-identifier "${cluster_id}" \
     --database "${database_name}" \
-    --parameters '[{"name": "pk", "value": "M_'${member_id}'"}]' \
-    --sql "SELECT approximatearrivaltimestamp FROM member_quest_data_extract where pk = :pk" \
+    --sql "SELECT * FROM member_quest_data_extract LIMIT 5" \
     | jq -r '.Id')"
 
-wait_for_execution_status_change "${query_member_from_mv_execution_id}"
-
-approximate_arrival_timestamp="$(aws redshift-data get-statement-result --id "${query_member_from_mv_execution_id}" | jq '.Records[0][0] | .stringValue')"
-log "Found member in materialized view with approximate arrival timestamp of ${approximate_arrival_timestamp}"
-
-log "sync_member"
-
-sync_member_execution_id="$(aws redshift-data execute-statement \
-    --region us-east-1 \
-    --db-user "${database_username}" \
-    --cluster-identifier "${cluster_id}" \
-    --database "${database_name}" \
-    --sql "call incremental_sync_members();" \
-    | jq -r '.Id')"
-
-
-wait_for_execution_status_change "${sync_member_execution_id}"
-
-log "get_member"
-
-get_member_execution_id="$(aws redshift-data execute-statement \
-    --region us-east-1 \
-    --db-user "${database_username}" \
-    --cluster-identifier "${cluster_id}" \
-    --database "${database_name}" \
-    --parameters '[{"name": "id", "value": "'${member_id}'"}]' \
-    --sql "SELECT memberId, approximateUpdateTimestamp, syncTimestamp, (syncTimestamp - approximateUpdateTimestamp) as syncLag FROM member WHERE memberId = :id" \
-    | jq -r '.Id')"
-
-wait_for_execution_status_change "${get_member_execution_id}"
-
-aws redshift-data get-statement-result --id "${get_member_execution_id}" | jq '.Records' 
-
-exit 0;
+wait_for_execution_status_change "${query_materialized_view}"
+aws redshift-data get-statement-result --id "${query_materialized_view}" | jq '.Records'

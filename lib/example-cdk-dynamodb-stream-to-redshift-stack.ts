@@ -7,13 +7,48 @@ import * as events from 'aws-cdk-lib/aws-events';
 import { Construct } from 'constructs';
 import { join } from 'path';
 import { Stream } from 'aws-cdk-lib/aws-kinesis';
-import { PolicyDocument, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
-
+import { PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
+import { Cluster } from '@aws-cdk/aws-redshift-alpha';
+import { Vpc } from 'aws-cdk-lib/aws-ec2';
+interface ExampleCdkDynamodbStreamToRedshiftStackProps extends StackProps {
+  vpc: Vpc
+  removalPolicy?: RemovalPolicy
+  masterUsername?: string
+  defaultDatabaseName?: string
+}
 export class ExampleCdkDynamodbStreamToRedshiftStack extends Stack {
-  constructor(scope: Construct, id: string, props?: StackProps) {
+  constructor(scope: Construct, id: string, props: ExampleCdkDynamodbStreamToRedshiftStackProps) {
     super(scope, id, props);
 
+    const defaultDatabaseName = props.defaultDatabaseName ?? "newdb";
+    const masterUsername = props.masterUsername ?? "admin"
+
+    const cluster = new Cluster(this, "Redshift", {
+      masterUser: {
+        masterUsername,
+      },
+      defaultDatabaseName,
+      vpc: props.vpc,
+      removalPolicy: props.removalPolicy
+    });
+
+    new CfnOutput(this, 'RedshiftDefaultDatabaseName', {
+      value: defaultDatabaseName
+    });
+
+    new CfnOutput(this, 'RedshiftClusterId', {
+      value: cluster.clusterName
+    });
+
+    new CfnOutput(this, 'RedshiftMasterUsername', {
+      value: masterUsername
+    });
+
     const stream = new Stream(this, 'DynamoChangeStream');
+
+    new CfnOutput(this, 'ChangeStreamName', {
+      value: stream.streamName
+    });
 
     // TODO restrict redshift ability to assume this role by specific database users
     // src: https://docs.aws.amazon.com/redshift/latest/mgmt/authorizing-redshift-service.html
@@ -36,7 +71,6 @@ export class ExampleCdkDynamodbStreamToRedshiftStack extends Stack {
     new CfnOutput(this, 'RedshiftAssumeRoleArn', {
       value: redshiftAssumeRole.roleArn
     });
-
 
     const table = new Table(this, 'Table', {
       partitionKey: {

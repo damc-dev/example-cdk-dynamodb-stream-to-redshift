@@ -1,11 +1,11 @@
 -- Set case sensitivity at the cluster level for admin user since Kinesis Stream names are case sensitive
 -- 		NOTE: Could probably try and make Kinesis stream name and IAM role lowercase so this isn't needed
-ALTER USER admin SET enable_case_sensitive_identifier TO true;
+--ALTER USER admin SET enable_case_sensitive_identifier TO true;
 
 -- Create external schema for accessing Kinesis
-CREATE EXTERNAL SCHEMA activity_tracking
-FROM KINESIS
-IAM_ROLE 'arn:aws:iam::094299891118:role/ExampleCdkDynamodbStreamT-RedshiftAssumeRole91938B-1J3YPQ6ZHT30V';
+--CREATE EXTERNAL SCHEMA activity_tracking
+--FROM KINESIS
+--IAM_ROLE 'arn:aws:iam::094299891118:role/ExampleCdkDynamodbStreamT-RedshiftAssumeRole91938B-1J3YPQ6ZHT30V';
 
 
 DROP MATERIALIZED VIEW IF EXISTS member_quest_data_extract;
@@ -32,4 +32,4 @@ CREATE MATERIALIZED VIEW member_quest_data_extract DISTKEY(5) sortkey(1) AS
     FROM activity_tracking."ExampleCdkDynamodbStreamToRedshiftStack-DynamoChangeStreamE7F0EE82-sAMpN3bIRC2S";
     
 -- Query columns of materialized view
-select pg_get_cols('member_quest_data_extract');
+-- select pg_get_cols('member_quest_data_extract');

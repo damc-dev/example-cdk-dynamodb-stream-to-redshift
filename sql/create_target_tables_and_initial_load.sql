@@ -1,5 +1,5 @@
 -- MEMBER: Create table
-DROP TABLE member;
+DROP TABLE IF EXISTS member;
 
 CREATE TABLE member (
     memberId VARCHAR,
@@ -28,7 +28,7 @@ SELECT * FROM member;
 
 -- QUEST: Create table
 
-DROP TABLE quest;
+DROP TABLE IF EXISTS quest;
 
 CREATE TABLE quest (
     questId VARCHAR,
@@ -58,7 +58,7 @@ SELECT * FROM quest;
 
 -- MEMBER QUEST: Create table
 
-drop table member_quest;
+DROP TABLE IF EXISTS member_quest;
 
 CREATE TABLE member_quest (
 	memberQuestId VARCHAR,
