@@ -10,12 +10,21 @@ wait_for_execution_status_change() {
     local statement_execution_id="${1}"
     local status="NONE"
     local result=""
+    
     while true; do
         result="$(aws redshift-data describe-statement --id "${statement_execution_id}")"
         status="$(echo "${result}" | jq -r '.Status')"
         log "id: ${statement_execution_id}, status: ${status}"
-        if [[ "${status}" == "FAILED" ]]; then log "${result}"; fi
-        if [[ "${status}" != "STARTED" ]]; then break; fi
+
+        if [[ "${status}" == "FAILED" ]]; then
+            log "Error occurred during sql execution, exiting..."
+            log "${result}"
+            exit 7
+        fi
+
+        if [[ "${status}" != "STARTED" ]]; then
+            break
+        fi
     done
 }
 
