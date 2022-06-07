@@ -41,3 +41,9 @@ bash scripts/setup_redshift.sh
 ```
 bash scripts/test_sync_time.sh
 ```
+
+# Clean up
+
+```
+npm run destroy
+```

@@ -10,7 +10,9 @@
     "test": "jest",
     "cdk": "cdk",
     "deploy": "cdk deploy --outputs-file outputs.json --all",
-    "deploy:watch": "cdk deploy --require-approval never --outputs-file outputs.json --watch"
+    "deploy:watch": "cdk deploy --require-approval never --outputs-file outputs.json --watch",
+    "destroy": "cdk destroy --all"
+
   },
   "devDependencies": {
     "@types/jest": "^27.5.0",

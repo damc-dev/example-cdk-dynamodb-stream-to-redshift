@@ -47,7 +47,7 @@ aws dynamodb put-item \
 
 log "Created member memberId: ${member_id}"
 
-log "refresh_mv"
+log "Refresh materialized view to populate it with new records from Kinesis data stream"
 refresh_mv_execution_id="$(aws redshift-data execute-statement \
     --region us-east-1 \
     --db-user "${database_username}" \
@@ -58,7 +58,7 @@ refresh_mv_execution_id="$(aws redshift-data execute-statement \
 
 wait_for_execution_status_change "${refresh_mv_execution_id}"
 
-log "query_member_from_mv"
+log "Query member from materialized view to get the approximate arrival timestamp the record was loaded into the materialized view"
 
 query_member_from_mv_execution_id="$(aws redshift-data execute-statement \
     --region us-east-1 \
@@ -74,7 +74,7 @@ wait_for_execution_status_change "${query_member_from_mv_execution_id}"
 approximate_arrival_timestamp="$(aws redshift-data get-statement-result --id "${query_member_from_mv_execution_id}" | jq '.Records[0][0] | .stringValue')"
 log "Found member in materialized view with approximate arrival timestamp of ${approximate_arrival_timestamp}"
 
-log "sync_member"
+log "Execute stored procedure to sync member table with new records in materialized view"
 
 sync_member_execution_id="$(aws redshift-data execute-statement \
     --region us-east-1 \
@@ -87,7 +87,7 @@ sync_member_execution_id="$(aws redshift-data execute-statement \
 
 wait_for_execution_status_change "${sync_member_execution_id}"
 
-log "get_member"
+log "Query member from target table"
 
 get_member_execution_id="$(aws redshift-data execute-statement \
     --region us-east-1 \
@@ -100,6 +100,7 @@ get_member_execution_id="$(aws redshift-data execute-statement \
 
 wait_for_execution_status_change "${get_member_execution_id}"
 
-aws redshift-data get-statement-result --id "${get_member_execution_id}" | jq '.Records' 
+log "Query results:"
+aws redshift-data get-statement-result --id "${get_member_execution_id}" | jq -r '.Records[0] | "\t memberId: \(.[0].stringValue) \n\t approximateUpdateTimestamp: \(.[1].stringValue) \n\t syncTimestamp: \(.[2].stringValue) \n\t syncLag: \(.[3].stringValue)"' 
 
 exit 0;

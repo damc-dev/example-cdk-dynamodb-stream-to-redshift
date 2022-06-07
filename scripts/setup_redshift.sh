@@ -36,7 +36,8 @@ database_username="${database_username:-${REDSHIFT_USERNAME}}"
 assume_role="${assume_role:-${REDSHIFT_ASSUME_ROLE_ARN}}"
 kinesis_stream_name="${kinesis_stream_name:-${KINESIS_STREAM_NAME}}"
 
-log "enable_case_sensitive_identifier"
+log "Enable case sensitive identifier"
+log "# This is required because Kinesis stream names are case sensitive"
 
 enable_case_sensitive_identifier="$(aws redshift-data execute-statement \
     --region us-east-1 \
@@ -47,25 +48,30 @@ enable_case_sensitive_identifier="$(aws redshift-data execute-statement \
     | jq -r '.Id')"
 wait_for_execution_status_change "${enable_case_sensitive_identifier}"
 
-log "associate_cluster_iam_role"
-aws redshift modify-cluster-iam-roles \
-    --cluster-identifier "${cluster_id}" \
-    --add-iam-roles "${assume_role}"
+log "Drop schemas and materialized view if they already exist"
 
-log "create_external_kinesis_schema"
+drop_schemas_and_materialized_view="$(aws redshift-data execute-statement \
+    --region us-east-1 \
+    --db-user "${database_username}" \
+    --cluster-identifier "${cluster_id}" \
+    --database "${database_name}" \
+    --sql "DROP MATERIALIZED VIEW IF EXISTS member_quest_data_extract; DROP SCHEMA IF EXISTS activity_tracking;" \
+    | jq -r '.Id')"
+
+wait_for_execution_status_change "${drop_schemas_and_materialized_view}"
+
+log "Create external kinesis schema"
 create_external_kinesis_schema="$(aws redshift-data execute-statement \
     --region us-east-1 \
     --db-user "${database_username}" \
     --cluster-identifier "${cluster_id}" \
     --database "${database_name}" \
-    --sql "DROP SCHEMA IF EXISTS activity_tracking; CREATE EXTERNAL SCHEMA activity_tracking FROM KINESIS IAM_ROLE '${assume_role}';" \
+    --sql "CREATE EXTERNAL SCHEMA activity_tracking FROM KINESIS IAM_ROLE '${assume_role}';" \
     | jq -r '.Id')"
 
 wait_for_execution_status_change "${create_external_kinesis_schema}"
 
 create_materialized_view_sql=$(cat <<-END
-DROP MATERIALIZED VIEW IF EXISTS member_quest_data_extract;
-
 CREATE MATERIALIZED VIEW member_quest_data_extract DISTKEY(5) sortkey(1) AS
     SELECT approximatearrivaltimestamp,
     partitionkey,
@@ -84,7 +90,7 @@ CREATE MATERIALIZED VIEW member_quest_data_extract DISTKEY(5) sortkey(1) AS
 END
 )
 
-log "create_materialized_view"
+log "Create materialized view"
 create_materialized_view="$(aws redshift-data execute-statement \
     --region us-east-1 \
     --db-user "${database_username}" \
@@ -96,7 +102,9 @@ create_materialized_view="$(aws redshift-data execute-statement \
 wait_for_execution_status_change "${create_materialized_view}"
 
 
-log "refresh_mv #so there is data for an initial load of tables"
+log "Refresh materialized view to populate it with records from Kinesis data stream"
+log "# This is required so there is data for initial load of target tables"
+
 refresh_mv_execution_id="$(aws redshift-data execute-statement \
     --region us-east-1 \
     --db-user "${database_username}" \
@@ -107,7 +115,8 @@ refresh_mv_execution_id="$(aws redshift-data execute-statement \
 
 wait_for_execution_status_change "${refresh_mv_execution_id}"
 
-log "create_target_tables_and_initial_load"
+log "Create target tables and initial data load"
+log "# Initial data load is only done for test purposes, in production you would dump your dynamoDB table and do an intial data load from that"
 create_target_tables_and_initial_load="$(aws redshift-data execute-statement \
     --region us-east-1 \
     --db-user "${database_username}" \
@@ -118,7 +127,7 @@ create_target_tables_and_initial_load="$(aws redshift-data execute-statement \
 
 wait_for_execution_status_change "${create_target_tables_and_initial_load}"
 
-log "incremental_sync_member_quests"
+log "Create stored procedure: incremental_sync_member_quests"
 incremental_sync_member_quests="$(aws redshift-data execute-statement \
     --region us-east-1 \
     --db-user "${database_username}" \
@@ -129,7 +138,7 @@ incremental_sync_member_quests="$(aws redshift-data execute-statement \
 
 wait_for_execution_status_change "${incremental_sync_member_quests}"
 
-log "incremental_sync_members"
+log "create stored procedure: incremental_sync_members"
 incremental_sync_members="$(aws redshift-data execute-statement \
     --region us-east-1 \
     --db-user "${database_username}" \
@@ -140,7 +149,7 @@ incremental_sync_members="$(aws redshift-data execute-statement \
 
 wait_for_execution_status_change "${incremental_sync_members}"
 
-log "incremental_sync_quests"
+log "create stored procedure: incremental_sync_quests"
 incremental_sync_quests="$(aws redshift-data execute-statement \
     --region us-east-1 \
     --db-user "${database_username}" \

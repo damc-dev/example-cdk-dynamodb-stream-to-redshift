@@ -23,26 +23,7 @@ export class ExampleCdkDynamodbStreamToRedshiftStack extends Stack {
     const defaultDatabaseName = props.defaultDatabaseName ?? "newdb";
     const masterUsername = props.masterUsername ?? "admin"
 
-    const cluster = new Cluster(this, "Redshift", {
-      masterUser: {
-        masterUsername,
-      },
-      defaultDatabaseName,
-      vpc: props.vpc,
-      removalPolicy: props.removalPolicy
-    });
 
-    new CfnOutput(this, 'RedshiftDefaultDatabaseName', {
-      value: defaultDatabaseName
-    });
-
-    new CfnOutput(this, 'RedshiftClusterId', {
-      value: cluster.clusterName
-    });
-
-    new CfnOutput(this, 'RedshiftMasterUsername', {
-      value: masterUsername
-    });
 
     const stream = new Stream(this, 'DynamoChangeStream');
 
@@ -106,6 +87,30 @@ export class ExampleCdkDynamodbStreamToRedshiftStack extends Stack {
     new events.Rule(this, 'Tick', {
       schedule: events.Schedule.rate(Duration.minutes(1)),
       targets: [ new events_targets.LambdaFunction(dataGenerator) ],
+    });
+
+    const cluster = new Cluster(this, "Redshift", {
+      masterUser: {
+        masterUsername,
+      },
+      defaultDatabaseName,
+      vpc: props.vpc,
+      removalPolicy: props.removalPolicy,
+      roles: [
+        redshiftAssumeRole
+      ]
+    });
+
+    new CfnOutput(this, 'RedshiftDefaultDatabaseName', {
+      value: defaultDatabaseName
+    });
+
+    new CfnOutput(this, 'RedshiftClusterId', {
+      value: cluster.clusterName
+    });
+
+    new CfnOutput(this, 'RedshiftMasterUsername', {
+      value: masterUsername
     });
   }
 }
