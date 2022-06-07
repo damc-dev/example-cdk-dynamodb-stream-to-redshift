@@ -28,15 +28,19 @@ wait_for_execution_status_change() {
     done
 }
 
+script_dir="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
+sql_dir="${script_dir}/../sql"
+output_file="${OUTPUT_FILE:-${script_dir}/../outputs.json}"
+
 stack_name="ExampleCdkDynamodbStreamToRedshiftStack"
 
-if [ -f "outputs.json" ]; then
-    dynamodb_table="$(jq -r '.'${stack_name}'.DynamoTableName' outputs.json)"
-    cluster_id="$(jq -r '.'${stack_name}'.RedshiftClusterId' outputs.json)"
-    assume_role="$(jq -r '.'${stack_name}'.RedshiftAssumeRoleArn' outputs.json)"
-    database_name="$(jq -r '.'${stack_name}'.RedshiftDefaultDatabaseName' outputs.json)"
-    database_username="$(jq -r '.'${stack_name}'.RedshiftMasterUsername' outputs.json)"
-    kinesis_stream_name="$(jq -r '.'${stack_name}'.ChangeStreamName' outputs.json)"
+if [ -f "${output_file}" ]; then
+    dynamodb_table="$(jq -r '.'${stack_name}'.DynamoTableName' "${output_file}")"
+    cluster_id="$(jq -r '.'${stack_name}'.RedshiftClusterId' "${output_file}")"
+    assume_role="$(jq -r '.'${stack_name}'.RedshiftAssumeRoleArn' "${output_file}")"
+    database_name="$(jq -r '.'${stack_name}'.RedshiftDefaultDatabaseName' "${output_file}")"
+    database_username="$(jq -r '.'${stack_name}'.RedshiftMasterUsername' "${output_file}")"
+    kinesis_stream_name="$(jq -r '.'${stack_name}'.ChangeStreamName' "${output_file}")"
 fi
 dynamodb_table="${dynamodb_table:-${DYNAMODB_TABLE}}"
 cluster_id="${cluster_id:-${REDSHIFT_CLUSTER_ID}}"
@@ -131,7 +135,7 @@ create_target_tables_and_initial_load="$(aws redshift-data execute-statement \
     --db-user "${database_username}" \
     --cluster-identifier "${cluster_id}" \
     --database "${database_name}" \
-    --sql file://./sql/create_target_tables_and_initial_load.sql \
+    --sql file://${sql_dir}/create_target_tables_and_initial_load.sql \
     | jq -r '.Id')"
 
 wait_for_execution_status_change "${create_target_tables_and_initial_load}"
@@ -142,7 +146,7 @@ incremental_sync_member_quests="$(aws redshift-data execute-statement \
     --db-user "${database_username}" \
     --cluster-identifier "${cluster_id}" \
     --database "${database_name}" \
-    --sql file://./sql/incremental_sync_member_quests.sql \
+    --sql file://${sql_dir}/incremental_sync_member_quests.sql \
     | jq -r '.Id')"
 
 wait_for_execution_status_change "${incremental_sync_member_quests}"
@@ -153,7 +157,7 @@ incremental_sync_members="$(aws redshift-data execute-statement \
     --db-user "${database_username}" \
     --cluster-identifier "${cluster_id}" \
     --database "${database_name}" \
-    --sql file://./sql/incremental_sync_members.sql \
+    --sql file://${sql_dir}/incremental_sync_members.sql \
     | jq -r '.Id')"
 
 wait_for_execution_status_change "${incremental_sync_members}"
@@ -164,7 +168,7 @@ incremental_sync_quests="$(aws redshift-data execute-statement \
     --db-user "${database_username}" \
     --cluster-identifier "${cluster_id}" \
     --database "${database_name}" \
-    --sql file://./sql/incremental_sync_quests.sql \
+    --sql file://${sql_dir}/incremental_sync_quests.sql \
     | jq -r '.Id')"
 
 wait_for_execution_status_change "${incremental_sync_quests}"

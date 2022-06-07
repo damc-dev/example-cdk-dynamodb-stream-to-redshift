@@ -22,6 +22,12 @@ This demo shows how you can use Redshift Streaming Ingestion (Preview) to sync D
 
 ## Deploy Infrastructure
 
+Install dependencies
+
+```
+npm install
+```
+
 Deploy DynamoDB table, data generator lambda, Kinesis Data Stream, VPC, Redshift Cluster and Redshift IAM Role
 
 ```

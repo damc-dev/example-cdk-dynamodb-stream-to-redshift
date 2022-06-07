@@ -23,8 +23,11 @@ member_id=""
 quest_id=""
 earned_dollars="0"
 
-if [ -f "outputs.json" ]; then
-    dynamodb_table="$(jq -r '.ExampleCdkDynamodbStreamToRedshiftStack.DynamoTableName' outputs.json)"
+script_dir="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
+output_file="${OUTPUT_FILE:-${script_dir}/../outputs.json}"
+
+if [ -f "${output_file}" ]; then
+    dynamodb_table="$(jq -r '.ExampleCdkDynamodbStreamToRedshiftStack.DynamoTableName' "${output_file}")"
 fi
 dynamodb_table="${dynamodb_table:-${DYNAMODB_TABLE}}"
 
