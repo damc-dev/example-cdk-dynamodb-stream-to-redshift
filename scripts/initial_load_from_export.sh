@@ -4,8 +4,6 @@ set -e
 
 export AWS_PAGER=""
 
-set -e
-
 usage() {
     echo "Usage: $(basename "$0") -a export_arn [-w]
 Does initial load of database table from DynamoDB table dump 
@@ -148,33 +146,13 @@ s3_prefix="$(echo "${export_description}" | jq -r '.ExportDescription.S3Prefix')
 
 data_location="s3://${dyanmodb_backup_bucket}/${s3_prefix}/AWSDynamoDB/${export_id}/data"
 
-log "Drop schemas and tables if they already exist"
-
-drop_schemas_and_tables="$(aws redshift-data execute-statement \
-    --region us-east-1 \
-    --db-user "${database_username}" \
-    --cluster-identifier "${cluster_id}" \
-    --database "${database_name}" \
-    --sql "DROP TABLE IF EXISTS dump_table" \
-    | jq -r '.Id')"
-
-wait_for_execution_status_change "${drop_schemas_and_tables}"
-
-
-create_dump_table_sql=$(cat <<-END
-CREATE TABLE dump_table (
-    Item SUPER
-);
-END
-)
-
-log "Create dump table"
+log "Create table to load DynamoDB export"
 create_dump_table="$(aws redshift-data execute-statement \
     --region us-east-1 \
     --db-user "${database_username}" \
     --cluster-identifier "${cluster_id}" \
     --database "${database_name}" \
-    --sql "${create_dump_table_sql}" \
+    --sql "file://${sql_dir}/create_dynamo_export_table.sql" \
     | jq -r '.Id')"
 
 wait_for_execution_status_change "${create_dump_table}"
@@ -191,47 +169,17 @@ create_redshift_table_from_backup="$(aws redshift-data execute-statement \
 
 wait_for_execution_status_change "${create_redshift_table_from_backup}"
 
-
-transform_and_load_member_data_sql=$(cat <<-END
-INSERT INTO member (
-SELECT
-    LTRIM(item.pk."S"::varchar, 'M_' )::varchar as memberId, 
-  	item.sk."S"::varchar as memberName,
-   	GETDATE()::timestamp as approximateUpdateTimestamp,
-  	'INITIAL_LOAD'::varchar as eventName,
-    GETDATE()::timestamp as syncTimestamp
-FROM
-    dump_table
-WHERE item.pk."S"::varchar LIKE 'M^_%' escape '^'
-);
-END
-)
-
 log "Transform and load member data"
 transform_and_load_member_data="$(aws redshift-data execute-statement \
     --region us-east-1 \
     --db-user "${database_username}" \
     --cluster-identifier "${cluster_id}" \
     --database "${database_name}" \
-    --sql "${transform_and_load_member_data_sql}" \
+    --sql "file://${sql_dir}/initial_load_members.sql" \
     | jq -r '.Id')"
 
 wait_for_execution_status_change "${transform_and_load_member_data}"
 
-transform_and_load_quest_data_sql=$(cat <<-END
-INSERT INTO quest (
-SELECT
-    LTRIM(item.pk."S"::varchar, 'Q_' )::varchar as questId, 
-  	item.sk."S"::varchar as questName,
-   	GETDATE()::timestamp as approximateUpdateTimestamp,
-  	'INITIAL_LOAD'::varchar as eventName,
-    GETDATE()::timestamp as syncTimestamp
-FROM
-    dump_table
-WHERE item.pk."S"::varchar LIKE 'Q^_%' escape '^'
-);
-END
-)
 
 log "Transform and load quest data"
 transform_and_load_quest_data="$(aws redshift-data execute-statement \
@@ -239,28 +187,11 @@ transform_and_load_quest_data="$(aws redshift-data execute-statement \
     --db-user "${database_username}" \
     --cluster-identifier "${cluster_id}" \
     --database "${database_name}" \
-    --sql "${transform_and_load_quest_data_sql}" \
+    --sql "file://${sql_dir}/initial_load_quests.sql" \
     | jq -r '.Id')"
 
 wait_for_execution_status_change "${transform_and_load_quest_data}"
 
-
-transform_and_load_member_quest_data_sql=$(cat <<-END
-INSERT INTO member_quest (
-SELECT
-    LTRIM(item.sk."S"::varchar, 'MQ_' )::varchar as memberQuestId,
-    LTRIM(item.pk."S"::varchar, 'MQ#M_' ) as memberId,
-   	item."questId"."S"::varchar as questId,
-    item."dollarsEarned"."N"::float as dollarsEarned,
-   	GETDATE()::timestamp as approximateUpdateTimestamp,
-  	'INITIAL_LOAD'::varchar as eventName,
-    GETDATE()::timestamp as syncTimestamp
-FROM
-    dump_table
-WHERE item.pk."S"::varchar LIKE 'MQ#%'
-);
-END
-)
 
 log "Transform and load member quest data"
 transform_and_load_member_quest_data="$(aws redshift-data execute-statement \
@@ -268,7 +199,7 @@ transform_and_load_member_quest_data="$(aws redshift-data execute-statement \
     --db-user "${database_username}" \
     --cluster-identifier "${cluster_id}" \
     --database "${database_name}" \
-    --sql "${transform_and_load_member_quest_data_sql}" \
+    --sql "file://${sql_dir}/initial_load_member_quests.sql" \
     | jq -r '.Id')"
 
 wait_for_execution_status_change "${transform_and_load_member_quest_data}"
