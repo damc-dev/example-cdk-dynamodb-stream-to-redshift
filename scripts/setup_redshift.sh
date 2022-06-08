@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 set -e
 
 export AWS_PAGER=""
@@ -135,7 +137,7 @@ create_target_tables_and_initial_load="$(aws redshift-data execute-statement \
     --db-user "${database_username}" \
     --cluster-identifier "${cluster_id}" \
     --database "${database_name}" \
-    --sql file://${sql_dir}/create_target_tables_and_initial_load.sql \
+    --sql file://${sql_dir}/create_target_tables.sql \
     | jq -r '.Id')"
 
 wait_for_execution_status_change "${create_target_tables_and_initial_load}"
