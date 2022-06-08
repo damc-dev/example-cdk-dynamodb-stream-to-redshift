@@ -107,6 +107,7 @@ fi
 
 
 script_dir="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
+sql_dir="${script_dir}/../sql"
 output_file="${OUTPUT_FILE:-${script_dir}/../outputs.json}"
 
 stack_name="ExampleCdkDynamodbStreamToRedshiftStack"
