@@ -8,15 +8,17 @@ import { Construct } from 'constructs';
 import { join } from 'path';
 import { Stream } from 'aws-cdk-lib/aws-kinesis';
 import { PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
-import { Cluster } from '@aws-cdk/aws-redshift-alpha';
+import { Cluster, ClusterType, NodeType } from '@aws-cdk/aws-redshift-alpha'
 import { Vpc } from 'aws-cdk-lib/aws-ec2';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
+
 interface ExampleCdkDynamodbStreamToRedshiftStackProps extends StackProps {
   vpc: Vpc
   removalPolicy?: RemovalPolicy
   masterUsername?: string
   defaultDatabaseName?: string
 }
+
 export class ExampleCdkDynamodbStreamToRedshiftStack extends Stack {
   constructor(scope: Construct, id: string, props: ExampleCdkDynamodbStreamToRedshiftStackProps) {
     super(scope, id, props);
@@ -98,6 +100,7 @@ export class ExampleCdkDynamodbStreamToRedshiftStack extends Stack {
 
     // Redshift Cluster
     const cluster = new Cluster(this, "Redshift", {
+      
       masterUser: {
         masterUsername,
       },
@@ -106,7 +109,9 @@ export class ExampleCdkDynamodbStreamToRedshiftStack extends Stack {
       removalPolicy: props.removalPolicy,
       roles: [
         redshiftAssumeRole
-      ]
+      ],
+      clusterType: ClusterType.SINGLE_NODE,
+      nodeType: NodeType.DC2_LARGE
     });
 
     new CfnOutput(this, 'RedshiftDefaultDatabaseName', {
