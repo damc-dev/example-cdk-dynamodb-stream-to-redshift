@@ -88,19 +88,19 @@ wait_for_execution_status_change "${create_external_kinesis_schema}"
 
 create_materialized_view_sql=$(cat <<-END
 CREATE MATERIALIZED VIEW member_quest_data_extract DISTKEY(5) sortkey(1) AS
-    SELECT approximatearrivaltimestamp,
-    partitionkey,
-    shardid,
-    sequencenumber,
-    json_extract_path_text(from_varbyte(data, 'utf-8'),'eventID')::varchar(30) as eventID,
-    json_extract_path_text(from_varbyte(data, 'utf-8'),'awsRegion')::character(36) as awsRegion,
-    json_extract_path_text(from_varbyte(data, 'utf-8'),'eventName')::varchar(20) as eventName,
-    json_extract_path_text(from_varbyte(data, 'utf-8'),'userIdentity')::varchar(20) as userIdentity,
-    json_extract_path_text(from_varbyte(data, 'utf-8'),'tableName')::varchar(20) as tableName,
-    json_extract_path_text(from_varbyte(data, 'utf-8'),'eventSource')::varchar(100) as eventSource,
-    json_extract_path_text(from_varbyte(data, 'utf-8'),'dynamodb', 'Keys', 'pk', 'S')::varchar(50) as pk,
-    json_extract_path_text(from_varbyte(data, 'utf-8'),'dynamodb', 'Keys', 'sk', 'S')::varchar(50) as sk,
-    json_parse(json_extract_path_text(from_varbyte(data, 'utf-8'),'dynamodb')) as eventData
+    SELECT approximate_arrival_timestamp as approximatearrivaltimestamp,
+    partition_key as partitionkey,
+    shard_id as shardid,
+    sequence_number as sequencenumber,
+    json_extract_path_text(from_varbyte(kinesis_data, 'utf-8'),'eventID')::varchar(30) as eventID,
+    json_extract_path_text(from_varbyte(kinesis_data, 'utf-8'),'awsRegion')::character(36) as awsRegion,
+    json_extract_path_text(from_varbyte(kinesis_data, 'utf-8'),'eventName')::varchar(20) as eventName,
+    json_extract_path_text(from_varbyte(kinesis_data, 'utf-8'),'userIdentity')::varchar(20) as userIdentity,
+    json_extract_path_text(from_varbyte(kinesis_data, 'utf-8'),'tableName')::varchar(20) as tableName,
+    json_extract_path_text(from_varbyte(kinesis_data, 'utf-8'),'eventSource')::varchar(100) as eventSource,
+    json_extract_path_text(from_varbyte(kinesis_data, 'utf-8'),'dynamodb', 'Keys', 'pk', 'S')::varchar(50) as pk,
+    json_extract_path_text(from_varbyte(kinesis_data, 'utf-8'),'dynamodb', 'Keys', 'sk', 'S')::varchar(50) as sk,
+    json_parse(json_extract_path_text(from_varbyte(kinesis_data, 'utf-8'),'dynamodb')) as eventData
     FROM activity_tracking."${kinesis_stream_name}";
 END
 )

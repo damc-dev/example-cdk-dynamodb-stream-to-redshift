@@ -2,6 +2,10 @@
 
 This demo shows how you can use Redshift Streaming Ingestion (Preview) to sync DynamoDB data with Redshift in near realtime for ETL, Analytics, and Reporting all using SQL
 
+## Motivation
+
+There are tons of great tools for streaming ETL, but if you already know SQL why complicate things when you can use the tools you are already familiar with to load data for in near realtime for analytics.
+
 ## Architecture Diagram
 
 ![img](./images/ArchitectureDiagram.png)
@@ -49,7 +53,7 @@ bash scripts/export_dynamodb_backup.sh
 ```
 
 ```
-bash scripts/intial_load_from_export.sh -a <export_arn>
+bash scripts/initial_load_from_export.sh -a <export_arn>
 ```
 
 # Test Incremental Sync of New Member Records
@@ -57,6 +61,12 @@ bash scripts/intial_load_from_export.sh -a <export_arn>
 ```
 bash scripts/test_sync_time.sh
 ```
+
+# Login to the Redshift query editor v2 to explore
+
+Go to https://us-east-1.console.aws.amazon.com/sqlworkbench/home?region=us-east-1#/client and login to AWS Account
+
+To connect to database select temporary credentials and `admin` for the user
 
 # Clean up
 
